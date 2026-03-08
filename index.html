@@ -1,0 +1,813 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MetaCPA</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzMiAzMiI+PHJlY3Qgd2lkdGg9IjMyIiBoZWlnaHQ9IjMyIiByeD0iNiIgZmlsbD0id2hpdGUiLz48ZGVmcz48bGluZWFyR3JhZGllbnQgaWQ9ImciIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPjxzdG9wIG9mZnNldD0iMCUiIHN0b3AtY29sb3I9IiMwMDgyRkIiLz48c3RvcCBvZmZzZXQ9IjEwMCUiIHN0b3AtY29sb3I9IiMwMDUyRDQiLz48L2xpbmVhckdyYWRpZW50PjwvZGVmcz48dGV4dCB4PSIxNiIgeT0iMjIiIGZvbnQtZmFtaWx5PSJBcmlhbCBCbGFjaywgQXJpYWwiIGZvbnQtd2VpZ2h0PSI5MDAiIGZvbnQtc2l6ZT0iMTMiIGZpbGw9InVybCgjZykiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGxldHRlci1zcGFjaW5nPSItMC41Ij5DUEE8L3RleHQ+PC9zdmc+">
+<script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600;700&display=swap');
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{background:#0A0E1A;color:#F0F4FF;font-family:'IBM Plex Mono','Courier New',monospace;min-height:100vh;}
+  ::-webkit-scrollbar{width:5px;height:5px;}
+  ::-webkit-scrollbar-track{background:#0A0E1A;}
+  ::-webkit-scrollbar-thumb{background:#1E2A3A;border-radius:3px;}
+  button{font-family:inherit;cursor:pointer;}
+  input[type=date]{font-family:inherit;color-scheme:dark;}
+
+  /* Header */
+  #header{border-bottom:1px solid rgba(255,255,255,0.06);padding:16px 28px;display:flex;align-items:center;justify-content:space-between;}
+  .dot{width:7px;height:7px;border-radius:50%;background:#00C9A7;box-shadow:0 0 10px #00C9A7;display:inline-block;margin-right:10px;}
+  .title{font-size:13px;font-weight:700;letter-spacing:0.15em;color:#00C9A7;}
+  .subtitle{color:#3A4A5E;font-size:10px;margin-top:2px;}
+
+  /* Upload screen */
+  #upload-screen{max-width:580px;margin:52px auto;padding:0 24px;}
+  .upload-title{font-size:16px;font-weight:700;color:#C8D6EC;margin-bottom:8px;text-align:center;}
+  .upload-desc{color:#556070;font-size:12px;line-height:1.8;text-align:center;margin-bottom:28px;}
+  .upload-zone{border:1.5px dashed rgba(255,255,255,0.12);border-radius:10px;padding:16px 20px;cursor:pointer;background:rgba(255,255,255,0.02);transition:all 0.15s;display:flex;align-items:center;gap:14px;margin-bottom:12px;}
+  .upload-zone:hover{border-color:rgba(0,201,167,0.4);background:rgba(0,201,167,0.03);}
+  .upload-zone.done{border-color:rgba(0,201,167,0.5);background:rgba(0,201,167,0.03);}
+  .upload-zone.drag{border-color:#00C9A7;background:rgba(0,201,167,0.06);}
+  .upload-icon{font-size:24px;min-width:28px;text-align:center;}
+  .upload-label{font-size:13px;font-weight:700;color:#C8D6EC;}
+  .upload-label.done{color:#00C9A7;}
+  .upload-hint{color:#556070;font-size:11px;margin-top:2px;}
+  .info-box{background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);border-radius:10px;padding:14px 18px;font-size:11px;color:#556070;line-height:1.9;margin-bottom:20px;}
+  .info-box-title{color:#8B9BB4;font-weight:700;margin-bottom:6px;}
+  .btn-primary{background:#1E2A3A;color:#556070;border:none;border-radius:8px;padding:13px;font-size:13px;font-weight:700;letter-spacing:0.04em;transition:all 0.2s;flex:2;}
+  .btn-primary.active{background:#00C9A7;color:#0A0E1A;cursor:pointer;}
+  .btn-secondary{background:rgba(255,255,255,0.05);color:#C8D6EC;border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:13px;font-size:12px;font-weight:600;flex:1;}
+  .btn-row{display:flex;gap:12px;margin-top:4px;}
+  .err-box{color:#FF6B6B;font-size:11px;background:rgba(255,107,107,0.08);border:1px solid rgba(255,107,107,0.2);border-radius:6px;padding:8px 12px;margin-top:6px;}
+
+  /* Dashboard */
+  #dashboard{padding:20px 28px;max-width:1440px;margin:0 auto;display:none;}
+
+  /* Date filter */
+  .date-bar{background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);border-radius:10px;padding:14px 20px;margin-bottom:18px;display:flex;align-items:center;gap:20px;flex-wrap:wrap;}
+  .date-bar-label{color:#8B9BB4;font-size:11px;font-weight:700;letter-spacing:0.08em;}
+  .date-inputs{display:flex;align-items:center;gap:10px;}
+  .date-input{background:rgba(0,0,0,0.3);border:1px solid rgba(255,255,255,0.1);border-radius:6px;padding:6px 10px;color:#F0F4FF;font-size:12px;}
+  .date-sep{color:#556070;font-size:12px;}
+  .date-stats{margin-left:auto;display:flex;gap:16px;color:#556070;font-size:11px;flex-wrap:wrap;}
+
+  /* KPI cards */
+  .kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(155px,1fr));gap:10px;margin-bottom:18px;}
+  .kpi-card{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:16px 20px;position:relative;overflow:hidden;}
+  .kpi-accent{position:absolute;top:0;left:0;width:3px;height:100%;border-radius:3px 0 0 3px;}
+  .kpi-label{color:#8B9BB4;font-size:10px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:5px;}
+  .kpi-value{color:#F0F4FF;font-size:22px;font-weight:700;letter-spacing:-0.02em;}
+  .kpi-sub{color:#556070;font-size:11px;margin-top:3px;}
+
+  /* Purchase panel */
+  .purchase-panel{background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);border-radius:10px;margin-bottom:18px;overflow:hidden;transition:border-color 0.2s;}
+  .purchase-panel.open{border-color:rgba(168,230,207,0.3);}
+  .purchase-header{padding:12px 18px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;}
+  .purchase-title{color:#A8E6CF;font-size:11px;font-weight:700;letter-spacing:0.08em;}
+  .purchase-badge{background:rgba(168,230,207,0.15);color:#A8E6CF;border:1px solid rgba(168,230,207,0.3);border-radius:5px;padding:1px 8px;font-size:10px;margin-left:10px;}
+  .purchase-body{padding:0 18px 16px;}
+  .purchase-hint{color:#556070;font-size:11px;margin-bottom:8px;}
+  .purchase-textarea{width:100%;height:140px;background:rgba(0,0,0,0.3);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:10px 12px;color:#F0F4FF;font-size:12px;font-family:'IBM Plex Mono',monospace;resize:vertical;line-height:1.6;}
+  .purchase-footer{display:flex;justify-content:space-between;align-items:center;margin-top:8px;}
+  .purchase-count{color:#556070;font-size:11px;}
+  .btn-clear{background:none;border:1px solid rgba(255,255,255,0.08);color:#8B9BB4;border-radius:5px;padding:3px 10px;font-size:10px;}
+
+  /* Tabs */
+  .tabs{display:flex;border-bottom:1px solid rgba(255,255,255,0.06);margin-bottom:14px;align-items:center;}
+  .tab-btn{background:none;border:none;padding:9px 18px;color:#556070;font-size:11px;font-weight:700;letter-spacing:0.06em;border-bottom:2px solid transparent;margin-bottom:-1px;transition:color 0.12s;}
+  .tab-btn.active{color:#00C9A7;border-bottom-color:#00C9A7;}
+  .tab-count{color:#2A3A50;font-size:10px;}
+
+  /* Table */
+  .table-wrap{background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);border-radius:12px;overflow:hidden;}
+  .table-scroll{overflow-x:auto;}
+  table{width:100%;border-collapse:collapse;font-size:12px;}
+  th{color:#556070;font-weight:600;font-size:10px;letter-spacing:0.06em;text-transform:uppercase;padding:10px 14px;text-align:left;white-space:nowrap;background:rgba(255,255,255,0.01);border-bottom:1px solid rgba(255,255,255,0.08);}
+  th.r{text-align:right;}
+  td{padding:12px 14px;border-bottom:1px solid rgba(255,255,255,0.04);color:#C8D6EC;white-space:nowrap;}
+  td.r{text-align:right;}
+  tr:nth-child(even){background:rgba(255,255,255,0.01);}
+  tr:hover{background:rgba(255,255,255,0.04)!important;}
+
+  /* CPA bar */
+  .cpa-bar-wrap{display:flex;align-items:center;gap:8px;min-width:160px;}
+  .cpa-bar-track{flex:1;height:6px;background:rgba(255,255,255,0.06);border-radius:3px;overflow:hidden;}
+  .cpa-bar-fill{height:100%;border-radius:3px;transition:width 0.4s;}
+  .cpa-bar-val{font-weight:700;font-size:12px;min-width:72px;text-align:right;}
+
+  /* Unmatched */
+  .warn-box{margin-top:16px;background:rgba(255,183,71,0.05);border:1px solid rgba(255,183,71,0.2);border-radius:10px;padding:14px 18px;}
+  .warn-title{color:#FFB347;font-size:11px;font-weight:700;margin-bottom:8px;}
+  .warn-tags{display:flex;flex-wrap:wrap;gap:6px;}
+  .warn-tag{background:rgba(255,183,71,0.1);color:#FFB347;border:1px solid rgba(255,183,71,0.2);border-radius:5px;padding:2px 8px;font-size:10px;}
+
+  .hidden{display:none!important;}
+  .reset-btn{background:none;border:1px solid rgba(255,255,255,0.1);color:#8B9BB4;border-radius:6px;padding:5px 14px;font-size:11px;}
+  .csv-btn{background:rgba(0,201,167,0.1);border:1px solid rgba(0,201,167,0.3);color:#00C9A7;border-radius:6px;padding:5px 14px;font-size:11px;font-weight:700;transition:all 0.15s;}
+  .csv-btn:hover{background:rgba(0,201,167,0.2);}
+  th.sortable{cursor:pointer;user-select:none;}
+  th.sortable:hover{color:#C8D6EC;background:rgba(255,255,255,0.04);}
+  th.sort-asc::after{content:' ▲';color:#00C9A7;font-size:9px;}
+  th.sort-desc::after{content:' ▼';color:#00C9A7;font-size:9px;}
+  .green{color:#00C9A7;font-weight:700;}
+  .teal{color:#4ECDC4;font-weight:700;}
+  .mint{color:#A8E6CF;font-weight:700;}
+  .muted{color:#556070;}
+  .dimmed{color:#3A4A5E;}
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<div id="header">
+  <div>
+    <div style="display:flex;align-items:center;">
+      <span class="dot"></span>
+      <span class="title">MetaCPA</span>
+    </div>
+    <div class="subtitle">Meta広告消化金額 × Lステップ登録数 → キャンペーン別CPA測定</div>
+  </div>
+  <button class="reset-btn hidden" id="reset-btn" onclick="resetAll()">← 再アップロード</button>
+</div>
+
+<!-- Upload Screen -->
+<div id="upload-screen">
+  <div class="upload-title">2つのファイルをアップロード</div>
+  <div class="upload-desc">MetaのExcelとLステップのCSVを読み込み、<br>パラメータで突合してキャンペーン別CPAを算出します。</div>
+
+  <!-- Meta Excel -->
+  <div class="upload-zone" id="zone-meta" onclick="document.getElementById('file-meta').click()"
+    ondragover="event.preventDefault();this.classList.add('drag')"
+    ondragleave="this.classList.remove('drag')"
+    ondrop="event.preventDefault();this.classList.remove('drag');handleMetaFile(event.dataTransfer.files[0])">
+    <div class="upload-icon" id="icon-meta">📂</div>
+    <div>
+      <div class="upload-label" id="label-meta">① Meta広告データ（Excel）</div>
+      <div class="upload-hint" id="hint-meta">.xlsx ファイル — 広告マネージャからエクスポート</div>
+    </div>
+  </div>
+  <input type="file" id="file-meta" accept=".xlsx,.xls" class="hidden" onchange="handleMetaFile(this.files[0])">
+  <div id="err-meta" class="err-box hidden"></div>
+
+  <!-- Lstep CSV -->
+  <div class="upload-zone" id="zone-lstep" onclick="document.getElementById('file-lstep').click()"
+    ondragover="event.preventDefault();this.classList.add('drag')"
+    ondragleave="this.classList.remove('drag')"
+    ondrop="event.preventDefault();this.classList.remove('drag');handleLstepFile(event.dataTransfer.files[0])">
+    <div class="upload-icon" id="icon-lstep">📂</div>
+    <div>
+      <div class="upload-label" id="label-lstep">② Lステップ 登録者データ（CSV）</div>
+      <div class="upload-hint" id="hint-lstep">.csv ファイル — 登録ID・日時・クエリパラメータ列が必要</div>
+    </div>
+  </div>
+  <input type="file" id="file-lstep" accept=".csv" class="hidden" onchange="handleLstepFile(this.files[0])">
+  <div id="err-lstep" class="err-box hidden"></div>
+
+  <div class="info-box" style="margin-top:16px;">
+    <div class="info-box-title">🔗 突合ロジック</div>
+    <div>Meta：<span style="color:#C8D6EC">キャンペーン名_広告セット名_広告名</span>　例）<span style="color:#00C9A7">j09-01_1_j09</span></div>
+    <div>Lステップ：<span style="color:#C8D6EC">param3のcampaign_X_set_Y_creative_Z</span>　例）<span style="color:#00C9A7">j09-01_1_j09</span></div>
+    <div style="margin-top:6px;color:#3A4A5E">キャンペーン名の括弧内は自動除去して照合します</div>
+  </div>
+
+  <div class="btn-row">
+    <button class="btn-primary" id="show-btn" onclick="showDashboard()">ダッシュボードを表示 →</button>
+    <button class="btn-secondary" onclick="loadDemo()">デモを見る</button>
+  </div>
+</div>
+
+<!-- Dashboard -->
+<div id="dashboard">
+
+  <!-- Date filter -->
+  <div class="date-bar">
+    <span class="date-bar-label">📅 集計期間（Lステップ）</span>
+    <div class="date-inputs">
+      <input type="date" class="date-input" id="date-start" onchange="renderDashboard()">
+      <span class="date-sep">〜</span>
+      <input type="date" class="date-input" id="date-end" onchange="renderDashboard()">
+    </div>
+    <div class="date-stats" id="date-stats"></div>
+  </div>
+
+  <!-- KPI -->
+  <div class="kpi-grid" id="kpi-grid"></div>
+
+  <!-- Purchase panel -->
+  <div class="purchase-panel" id="purchase-panel">
+    <div class="purchase-header" onclick="togglePurchase()">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <span style="font-size:14px">🛒</span>
+        <span class="purchase-title">購入データを貼り付け</span>
+        <span class="purchase-badge hidden" id="purchase-badge"></span>
+      </div>
+      <span style="color:#556070;font-size:12px" id="purchase-chevron">▼</span>
+    </div>
+    <div class="purchase-body hidden" id="purchase-body">
+      <div class="purchase-hint">1行につき1件のキー（例：<span style="color:#A8E6CF">j09-01_1_j09</span>）を貼り付けてください。同じキーが複数行あれば自動集計します。</div>
+      <textarea class="purchase-textarea" id="purchase-textarea" placeholder="j09-01_1_j09&#10;j03-01_1_j03&#10;j09-01_1_j09&#10;..." oninput="renderDashboard()"></textarea>
+      <div class="purchase-footer">
+        <span class="purchase-count" id="purchase-count">データ未入力</span>
+        <button class="btn-clear" onclick="clearPurchase()">クリア</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="tabs">
+    <button class="tab-btn active" id="tab-campaign" onclick="setView('campaign')">キャンペーン <span class="tab-count" id="cnt-campaign"></span></button>
+    <button class="tab-btn" id="tab-adset" onclick="setView('adset')">広告セット <span class="tab-count" id="cnt-adset"></span></button>
+    <button class="tab-btn" id="tab-ad" onclick="setView('ad')">広告 <span class="tab-count" id="cnt-ad"></span></button>
+    <div style="margin-left:auto;display:flex;align-items:center;gap:8px;padding-bottom:1px;">
+      <button class="csv-btn" onclick="downloadCSV()">⬇ CSVダウンロード</button>
+    </div>
+  </div>
+
+  <!-- Table -->
+  <div class="table-wrap">
+    <div class="table-scroll">
+      <table id="main-table">
+        <thead id="main-thead"></thead>
+        <tbody id="main-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Unmatched -->
+  <div class="warn-box hidden" id="warn-box">
+    <div class="warn-title" id="warn-title"></div>
+    <div class="warn-tags" id="warn-tags"></div>
+  </div>
+</div>
+
+<script>
+// ─── State ───
+let metaRows = null;
+let lstepRows = null;
+let currentView = 'campaign';
+let result = null;
+let sortKey = null;
+let sortDir = 1; // 1=昇順, -1=降順
+
+// ─── Helpers ───
+const fmtYen = n => n == null ? '—' : Math.round(n).toLocaleString(); // カンマあり・円マークなし
+const fmtRate = n => n == null ? '—' : Math.round(n * 10) / 10 + '%'; // 小数点1桁
+const fmt = n => n>=1000000?`${(n/1000000).toFixed(1)}M`:n>=1000?`${(n/1000).toFixed(0)}K`:String(Math.round(n));
+
+function cleanCampaignName(s) {
+  return String(s).replace(/\(.*?\)/g,'').replace(/（.*?）/g,'').trim();
+}
+
+function extractLstepKey(paramStr) {
+  try {
+    const s = String(paramStr || '');
+    const m = s.match(/campaign_([^_"]+(?:-[^_"]+)*)_set_([^_"]+)_creative_([^_"}\s]+)/);
+    if (m) return `${m[1]}_${m[2]}_${m[3]}`;
+  } catch(e) {}
+  return null;
+}
+
+function parseCSVText(text) {
+  const lines = text.split(/\r?\n/).filter(l => l.trim());
+  if (!lines.length) return [];
+  const headers = lines[0].split(',').map(h => h.replace(/^"|"$/g,'').trim());
+  return lines.slice(1).map(line => {
+    const cells = [];
+    let cur = '', inQ = false;
+    for (let i=0; i<line.length; i++) {
+      const c = line[i];
+      if (c==='"') { inQ=!inQ; continue; }
+      if (c===',' && !inQ) { cells.push(cur); cur=''; continue; }
+      cur += c;
+    }
+    cells.push(cur);
+    const row = {};
+    headers.forEach((h,i) => { row[h] = (cells[i]||'').trim(); });
+    return row;
+  }).filter(r => Object.values(r).some(v=>v));
+}
+
+function aggregateLstep(rows, startDate, endDate) {
+  const counts = {};
+  let total = 0, outOfRange = 0;
+  for (const row of rows) {
+    const dtStr = row['日時'];
+    if (!dtStr) continue;
+    // 日付部分だけ取り出してローカル日付として比較（タイムゾーン問題回避）
+    const datePart = dtStr.slice(0, 10); // "2026-03-01"
+    if (startDate && datePart < startDate) { outOfRange++; continue; }
+    if (endDate   && datePart > endDate)   { outOfRange++; continue; }
+    const key = extractLstepKey(row['クエリパラメータ']) || '__no_param__';
+    counts[key] = (counts[key]||0) + 1;
+    total++;
+  }
+  return { counts, total, outOfRange };
+}
+
+function parsePurchaseText(text) {
+  const counts = {};
+  let total = 0;
+  for (const line of text.split(/\r?\n/).map(l=>l.trim()).filter(Boolean)) {
+    counts[line] = (counts[line]||0) + 1;
+    total++;
+  }
+  return { counts, total };
+}
+
+// ─── File Handlers ───
+async function handleMetaFile(file) {
+  if (!file) return;
+  try {
+    const buf = await file.arrayBuffer();
+    const wb = XLSX.read(new Uint8Array(buf), { type:'array' });
+    const ws = wb.Sheets[wb.SheetNames[0]];
+    const rows = XLSX.utils.sheet_to_json(ws, { defval:'' });
+    metaRows = rows.map(r => {
+      const camp = cleanCampaignName(r['キャンペーン名'] || r['Campaign Name'] || '');
+      const adset = String(r['広告セット名'] || r['Ad Set Name'] || '').trim();
+      const ad = String(r['広告の名前'] || r['Ad Name'] || '').trim();
+      return {
+        camp_raw: String(r['キャンペーン名']||'').trim(),
+        camp, adset, ad,
+        key: `${camp}_${adset}_${ad}`,
+        spend: parseFloat(String(r['消化金額 (JPY)']||r['Amount Spent (JPY)']||r['消化金額']||0).replace(/,/g,''))||0,
+        impressions: parseFloat(String(r['インプレッション']||r['Impressions']||0).replace(/,/g,''))||0,
+        clicks: parseFloat(String(r['リンクのクリック']||r['Link Clicks']||r['クリック']||0).replace(/,/g,''))||0,
+        ctr: parseFloat(String(r['CTR(リンククリックスルー率)']||r['CTR']||0).replace(/,/g,''))||0,
+        cpm: parseFloat(String(r['CPM(インプレッション単価) (JPY)']||r['CPM']||0).replace(/,/g,''))||0,
+        cpc: parseFloat(String(r['CPC(リンククリックの単価) (JPY)']||r['CPC']||0).replace(/,/g,''))||0,
+      };
+    });
+    setZoneDone('meta', file.name);
+    hideErr('meta');
+    checkReady();
+  } catch(e) {
+    showErr('meta', '読み込みエラー: ' + e.message);
+  }
+}
+
+function handleLstepFile(file) {
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    try {
+      const rows = parseCSVText(ev.target.result);
+      if (!rows.length || !rows[0]['日時']) throw new Error('日時列が見つかりません');
+      lstepRows = rows;
+      // デフォルト：今月1日〜今日
+      const today = new Date();
+      const yyyy = today.getFullYear();
+      const mm = String(today.getMonth() + 1).padStart(2, '0');
+      const dd = String(today.getDate()).padStart(2, '0');
+      document.getElementById('date-start').value = `${yyyy}-${mm}-01`;
+      document.getElementById('date-end').value   = `${yyyy}-${mm}-${dd}`;
+      setZoneDone('lstep', file.name);
+      hideErr('lstep');
+      checkReady();
+    } catch(e) {
+      showErr('lstep', '読み込みエラー: ' + e.message);
+    }
+  };
+  reader.readAsText(file, 'Shift-JIS');
+}
+
+function setZoneDone(id, name) {
+  document.getElementById('zone-'+id).classList.add('done');
+  document.getElementById('icon-'+id).textContent = '✅';
+  document.getElementById('label-'+id).classList.add('done');
+  document.getElementById('hint-'+id).textContent = name;
+}
+
+function showErr(id, msg) {
+  const el = document.getElementById('err-'+id);
+  el.textContent = '⚠ ' + msg;
+  el.classList.remove('hidden');
+}
+function hideErr(id) { document.getElementById('err-'+id).classList.add('hidden'); }
+
+function checkReady() {
+  const btn = document.getElementById('show-btn');
+  if (metaRows && lstepRows) btn.classList.add('active');
+}
+
+// ─── Compute ───
+function compute() {
+  if (!metaRows || !lstepRows) return null;
+  const startDate = document.getElementById('date-start').value; // "YYYY-MM-DD" 文字列
+  const endDate   = document.getElementById('date-end').value;
+
+  const { counts, total, outOfRange } = aggregateLstep(lstepRows, startDate, endDate);
+
+  const campMap = {};
+  for (const row of metaRows) {
+    if (!campMap[row.camp]) campMap[row.camp] = { name:row.camp, spend:0, impressions:0, clicks:0, ctr:0, cpm:0, cpc:0, registrations:0, adsets:{} };
+    const c = campMap[row.camp];
+    c.spend += row.spend; c.impressions += row.impressions; c.clicks += row.clicks;
+    c.registrations += counts[row.key]||0;
+
+    if (!c.adsets[row.adset]) c.adsets[row.adset] = { name:row.adset, spend:0, impressions:0, clicks:0, registrations:0, ads:{} };
+    const s = c.adsets[row.adset];
+    s.spend += row.spend; s.impressions += row.impressions; s.clicks += row.clicks;
+    s.registrations += counts[row.key]||0;
+
+    s.ads[row.ad] = { name:row.ad, spend:row.spend, impressions:row.impressions, clicks:row.clicks,
+      ctr:row.ctr, cpm:row.cpm, cpc:row.cpc,
+      registrations:counts[row.key]||0,
+      cpa: counts[row.key]>0 ? row.spend/counts[row.key] : null };
+  }
+
+  const campaigns = Object.values(campMap).map(c=>({
+    ...c, campaign:null, adset:null,
+    cpa: c.registrations>0 ? c.spend/c.registrations : null,
+    ctr: c.impressions>0 ? (c.clicks/c.impressions)*100 : 0,
+    cpm: c.impressions>0 ? (c.spend/c.impressions)*1000 : 0,
+    cpc: c.clicks>0 ? c.spend/c.clicks : 0,
+  })).sort((a,b)=>(a.cpa||9e9)-(b.cpa||9e9));
+
+  const adsets = campaigns.flatMap(c=>Object.values(c.adsets).map(s=>({
+    ...s, campaign:c.name, adset:null,
+    cpa: s.registrations>0 ? s.spend/s.registrations : null,
+    ctr: s.impressions>0 ? (s.clicks/s.impressions)*100 : 0,
+    cpm: s.impressions>0 ? (s.spend/s.impressions)*1000 : 0,
+    cpc: s.clicks>0 ? s.spend/s.clicks : 0,
+  }))).sort((a,b)=>(a.cpa||9e9)-(b.cpa||9e9));
+
+  const ads = adsets.flatMap(s=>Object.values(s.ads).map(a=>({
+    ...a, campaign:s.campaign, adset:s.name,
+  }))).sort((a,b)=>(a.cpa||9e9)-(b.cpa||9e9));
+
+  const totalSpend = campaigns.reduce((s,c)=>s+c.spend,0);
+  const totalReg = campaigns.reduce((s,c)=>s+c.registrations,0);
+  const totalCPA = totalReg>0 ? totalSpend/totalReg : null;
+
+  return { campaigns, adsets, ads, totalSpend, totalReg, totalCPA, lstepTotal:total, lstepOutOfRange:outOfRange, counts };
+}
+
+// ─── Render ───
+function renderDashboard() {
+  result = compute();
+  if (!result) return;
+
+  const purchaseText = document.getElementById('purchase-textarea').value;
+  const { counts: pCounts, total: pTotal } = parsePurchaseText(purchaseText);
+
+  // Date stats
+  document.getElementById('date-stats').innerHTML =
+    `<span>期間内登録数: <span class="green">${result.lstepTotal.toLocaleString()}件</span></span>
+     <span>期間外除外: <span style="color:#FFB347">${result.lstepOutOfRange.toLocaleString()}件</span></span>`;
+
+  // Tab counts
+  document.getElementById('cnt-campaign').textContent = result.campaigns.length;
+  document.getElementById('cnt-adset').textContent = result.adsets.length;
+  document.getElementById('cnt-ad').textContent = result.ads.length;
+
+  // KPI
+  const purchaseCPA = pTotal>0 ? Math.round(result.totalSpend/pTotal).toLocaleString() : '—';
+  const convRate = result.totalReg>0 && pTotal>0 ? fmtRate((pTotal/result.totalReg)*100) : '—';
+  const kpiData = [
+    { label:'総消化金額', value: result.totalSpend>0 ? Math.round(result.totalSpend).toLocaleString() : '—', sub:`${metaRows.length}広告`, accent:'#FF6B6B' },
+    { label:'LINE登録数', value:result.lstepTotal.toLocaleString()+'件', sub:`突合: ${result.totalReg}件`, accent:'#00C9A7' },
+    { label:'LINE登録CPA', value: result.totalCPA ? Math.round(result.totalCPA).toLocaleString() : '—', sub:'消化金額÷LINE登録数', accent:'#FFE66D' },
+    { label:'購入数', value:pTotal>0?pTotal.toLocaleString()+'件':'未入力', sub:pTotal>0?'貼り付けデータより':'下の購入データ欄に入力', accent:'#A8E6CF' },
+    { label:'購入CPA', value:purchaseCPA, sub:'消化金額÷購入数', accent:'#FF8B94' },
+    { label:'登録→購入率', value:convRate, sub:'購入数÷LINE登録数', accent:'#4ECDC4' },
+  ];
+  document.getElementById('kpi-grid').innerHTML = kpiData.map(k=>`
+    <div class="kpi-card">
+      <div class="kpi-accent" style="background:${k.accent}"></div>
+      <div class="kpi-label">${k.label}</div>
+      <div class="kpi-value">${k.value}</div>
+      <div class="kpi-sub">${k.sub}</div>
+    </div>`).join('');
+
+  // Purchase badge
+  const badge = document.getElementById('purchase-badge');
+  if (pTotal > 0) { badge.textContent = pTotal.toLocaleString()+'件入力済み'; badge.classList.remove('hidden'); }
+  else badge.classList.add('hidden');
+
+  // Purchase count label
+  if (purchaseText.trim()) {
+    const lines = purchaseText.trim().split(/\r?\n/).filter(Boolean).length;
+    document.getElementById('purchase-count').textContent = `${lines}行 / ユニークキー: ${Object.keys(pCounts).length}種`;
+  } else {
+    document.getElementById('purchase-count').textContent = 'データ未入力';
+  }
+
+  // Render table
+  renderTable(result, pCounts, pTotal);
+}
+
+function getPurchaseForRow(row, pCounts, view) {
+  const direct = pCounts[row.name] || 0;
+  if (direct > 0) return direct;
+  if (view === 'campaign') {
+    return Object.entries(pCounts).filter(([k])=>k.startsWith(row.name+'_')).reduce((s,[,v])=>s+v,0);
+  }
+  if (view === 'adset') {
+    return Object.entries(pCounts).filter(([k])=>k.startsWith(row.campaign+'_'+row.name+'_')).reduce((s,[,v])=>s+v,0);
+  }
+  return 0;
+}
+
+function cpaBarHTML(value, max, color) {
+  const w = max>0 ? Math.min(100,(value/max)*100) : 0;
+  const c = color || (value<10000?'#00C9A7':value<15000?'#FFE66D':'#FF6B6B');
+  return `<div class="cpa-bar-wrap">
+    <div class="cpa-bar-track"><div class="cpa-bar-fill" style="width:${w}%;background:${c}"></div></div>
+    <span class="cpa-bar-val" style="color:${c}">${Math.round(value).toLocaleString()}</span>
+  </div>`;
+}
+
+function sortRows(rows) {
+  if (!sortKey) return rows;
+  return [...rows].sort((a, b) => {
+    let va = a[sortKey], vb = b[sortKey];
+    // nullは末尾
+    if (va == null && vb == null) return 0;
+    if (va == null) return 1;
+    if (vb == null) return -1;
+    if (typeof va === 'string') return va.localeCompare(vb, 'ja') * sortDir;
+    return (va - vb) * sortDir;
+  });
+}
+
+function setSort(key) {
+  if (sortKey === key) sortDir *= -1;
+  else { sortKey = key; sortDir = 1; }
+  if (result) {
+    const purchaseText = document.getElementById('purchase-textarea').value;
+    const { counts: pCounts, total: pTotal } = parsePurchaseText(purchaseText);
+    renderTable(result, pCounts, pTotal);
+  }
+}
+
+function renderTable(result, pCounts, pTotal) {
+  const view = currentView;
+  const items = view==='campaign' ? result.campaigns : view==='adset' ? result.adsets : result.ads;
+
+  // 購入数付与
+  const augmented = items.map(row => ({
+    ...row,
+    purchases: getPurchaseForRow(row, pCounts, view),
+  })).map(row => ({
+    ...row,
+    purchaseCpaVal: row.purchases > 0 ? row.spend / row.purchases : null,
+    convRateVal:    row.registrations > 0 && row.purchases > 0 ? (row.purchases / row.registrations) * 100 : null,
+    regRateVal:     row.clicks > 0 ? (row.registrations / row.clicks) * 100 : null, // 登録率=登録数÷クリック数
+    ctrVal:         row.ctr > 0 ? row.ctr : row.impressions > 0 ? (row.clicks / row.impressions) * 100 : 0,
+  }));
+
+  // ソート適用
+  const sorted = sortRows(augmented);
+
+  const maxCpa = augmented.reduce((m,r)=>Math.max(m,r.cpa||0),0);
+  const maxPurchaseCpa = augmented.reduce((m,r)=>Math.max(m,r.purchaseCpaVal||0),0);
+
+  // ヘッダー定義
+  const cols = [];
+  if (view==='adset') cols.push({ key:'campaign', label:'キャンペーン', r:false });
+  if (view==='ad')    cols.push({ key:'campaign', label:'キャンペーン', r:false }, { key:'adset', label:'広告セット', r:false });
+  cols.push(
+    { key:'name',          label: view==='campaign'?'キャンペーン名':view==='adset'?'広告セット名':'広告名', r:false },
+    { key:'spend',         label:'消化金額',     r:true },
+    { key:'registrations', label:'LINE登録数',   r:true },
+    { key:'cpa',           label:'LINE登録CPA',  r:true },
+    { key:'regRateVal',    label:'登録率',        r:true },
+    { key:'purchases',     label:'購入数',        r:true },
+    { key:'purchaseCpaVal',label:'購入CPA',       r:true },
+    { key:'convRateVal',   label:'登録→購入率',  r:true },
+    { key:'impressions',   label:'インプレッション', r:true },
+    { key:'clicks',        label:'クリック',      r:true },
+    { key:'ctrVal',        label:'CTR',           r:true },
+    { key:'cpm',           label:'CPM',           r:true },
+    { key:'cpc',           label:'CPC',           r:true },
+  );
+
+  // ヘッダーHTML
+  const thHTML = cols.map(col => {
+    const isSorted = sortKey === col.key;
+    const cls = ['sortable', col.r ? 'r' : '', isSorted ? (sortDir===1?'sort-asc':'sort-desc') : ''].filter(Boolean).join(' ');
+    return `<th class="${cls}" onclick="setSort('${col.key}')">${col.label}</th>`;
+  }).join('');
+  document.getElementById('main-thead').innerHTML = '<tr>' + thHTML + '</tr>';
+
+  // 行HTML
+  const rowsHTML = sorted.map(row => {
+    const tds = cols.map(col => {
+      const v = row[col.key];
+      switch(col.key) {
+        case 'campaign':
+        case 'adset':
+          return `<td><span class="muted">${v||''}</span></td>`;
+        case 'name':
+          return `<td style="color:#F0F4FF;font-weight:600">${v}</td>`;
+        case 'spend':
+          return `<td class="r">${v > 0 ? v.toLocaleString() : '—'}</td>`;
+        case 'registrations':
+          return `<td class="r"><span style="color:${v>0?'#00C9A7':'#556070'};font-weight:${v>0?700:400}">${v > 0 ? v.toLocaleString()+'件' : '0件'}</span></td>`;
+        case 'cpa':
+          return `<td>${v ? cpaBarHTML(v, maxCpa) : '<span class="muted">—</span>'}</td>`;
+        case 'regRateVal':
+          return `<td class="r"><span style="color:${v>0?'#4ECDC4':'#556070'}">${v ? Math.round(v)+'%' : '—'}</span></td>`;
+        case 'purchases':
+          return pTotal > 0
+            ? `<td class="r"><span style="color:${v>0?'#A8E6CF':'#556070'};font-weight:${v>0?700:400}">${v > 0 ? v.toLocaleString()+'件' : '0件'}</span></td>`
+            : `<td class="r dimmed">—</td>`;
+        case 'purchaseCpaVal':
+          return pTotal > 0
+            ? `<td>${v ? cpaBarHTML(v, maxPurchaseCpa, '#A8E6CF') : '<span class="dimmed">—</span>'}</td>`
+            : `<td class="dimmed">—</td>`;
+        case 'convRateVal':
+          return pTotal > 0
+            ? `<td class="r">${v ? `<span class="teal">${Math.round(v)}%</span>` : '<span class="dimmed">—</span>'}</td>`
+            : `<td class="r dimmed">—</td>`;
+        case 'impressions':
+          return `<td class="r muted">${v > 0 ? Math.round(v).toLocaleString() : '—'}</td>`;
+        case 'clicks':
+          return `<td class="r muted">${v > 0 ? Math.round(v).toLocaleString()+'件' : '—'}</td>`;
+        case 'ctrVal':
+          return `<td class="r muted">${v > 0 ? fmtRate(v) : '—'}</td>`;
+        case 'cpm':
+        case 'cpc':
+          return `<td class="r muted">${v > 0 ? Math.round(v).toLocaleString() : '—'}</td>`;
+        default:
+          return `<td class="r muted">${v??'—'}</td>`;
+      }
+    }).join('');
+    return '<tr>' + tds + '</tr>';
+  }).join('');
+  document.getElementById('main-tbody').innerHTML = rowsHTML;
+
+  // Unmatched
+  const metaKeys = new Set(metaRows.map(r=>r.key));
+  const unmatched = Object.entries(result.counts)
+    .filter(([k])=>k!=='__no_param__'&&!metaKeys.has(k))
+    .sort((a,b)=>b[1]-a[1]);
+  const warnBox = document.getElementById('warn-box');
+  if (unmatched.length) {
+    const total = unmatched.reduce((s,[,c])=>s+c,0);
+    document.getElementById('warn-title').textContent = `⚠ Metaデータと突合できなかったLステップパラメータ（${total}件）`;
+    document.getElementById('warn-tags').innerHTML = unmatched.slice(0,20).map(([k,c])=>`<span class="warn-tag">${k} (${c})</span>`).join('');
+    warnBox.classList.remove('hidden');
+  } else {
+    warnBox.classList.add('hidden');
+  }
+}
+
+// ─── UI Controls ───
+function showDashboard() {
+  if (!metaRows || !lstepRows) return;
+  document.getElementById('upload-screen').style.display = 'none';
+  document.getElementById('dashboard').style.display = 'block';
+  document.getElementById('reset-btn').classList.remove('hidden');
+  renderDashboard();
+}
+
+function downloadCSV() {
+  if (!result) return;
+  const view = currentView;
+  const items = view==='campaign' ? result.campaigns : view==='adset' ? result.adsets : result.ads;
+  const purchaseText = document.getElementById('purchase-textarea').value;
+  const { counts: pCounts, total: pTotal } = parsePurchaseText(purchaseText);
+  const augmented = items.map(row => ({
+    ...row,
+    purchases: getPurchaseForRow(row, pCounts, view),
+    purchaseCpaVal: null,
+    convRateVal: null,
+  })).map(row => ({
+    ...row,
+    purchaseCpaVal: row.purchases > 0 ? row.spend / row.purchases : null,
+    convRateVal: row.registrations > 0 && row.purchases > 0 ? (row.purchases / row.registrations) * 100 : null,
+    ctrVal: row.ctr > 0 ? row.ctr : row.impressions > 0 ? (row.clicks / row.impressions) * 100 : 0,
+  }));
+  const sorted = sortRows(augmented); // 現在のソート順を反映
+
+  const headers = [];
+  if (view==='adset') headers.push('キャンペーン');
+  if (view==='ad')    headers.push('キャンペーン','広告セット');
+  const nameLabel = view==='campaign'?'キャンペーン名':view==='adset'?'広告セット名':'広告名';
+  headers.push(nameLabel,'消化金額','LINE登録数','LINE登録CPA','登録率','購入数','購入CPA','登録→購入率','インプレッション','クリック','CTR','CPM','CPC');
+
+  const esc = v => {
+    const s = String(v ?? '');
+    return s.includes(',') || s.includes('"') || s.includes('\n') ? `"${s.replace(/"/g,'""')}"` : s;
+  };
+
+  const rows = sorted.map(row => {
+    const regRate    = row.clicks > 0 ? ((row.registrations / row.clicks) * 100) : null;
+    const purchaseCPA = row.purchases > 0 ? Math.round(row.spend / row.purchases) : '';
+    const convRate   = row.registrations > 0 && row.purchases > 0
+      ? Math.round((row.purchases / row.registrations) * 100) : '';
+    const ctrVal     = row.ctr > 0 ? row.ctr : row.impressions > 0 ? (row.clicks / row.impressions) * 100 : 0;
+    const cols = [];
+    if (view==='adset') cols.push(row.campaign||'');
+    if (view==='ad')    cols.push(row.campaign||'', row.adset||'');
+    cols.push(
+      row.name,
+      row.spend > 0 ? Math.round(row.spend) : '',
+      row.registrations,
+      row.cpa ? Math.round(row.cpa) : '',
+      regRate != null ? Math.round(regRate) : '',
+      pTotal > 0 ? row.purchases : '',
+      pTotal > 0 ? purchaseCPA : '',
+      pTotal > 0 ? convRate : '',
+      row.impressions > 0 ? Math.round(row.impressions) : '',
+      row.clicks > 0 ? Math.round(row.clicks) : '',
+      ctrVal > 0 ? (Math.round(ctrVal * 10) / 10) : '',
+      row.cpm > 0 ? Math.round(row.cpm) : '',
+      row.cpc > 0 ? Math.round(row.cpc) : '',
+    );
+    return cols.map(esc).join(',');
+  });
+
+  const csv = '\uFEFF' + [headers.map(esc).join(','), ...rows].join('\r\n');
+  const blob = new Blob([csv], { type:'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const start = document.getElementById('date-start').value || 'all';
+  const end = document.getElementById('date-end').value || 'all';
+  a.href = url;
+  a.download = `meta_cpa_${view}_${start}_${end}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function resetAll() {
+  metaRows = null; lstepRows = null; result = null;
+  document.getElementById('upload-screen').style.display = 'block';
+  document.getElementById('dashboard').style.display = 'none';
+  document.getElementById('reset-btn').classList.add('hidden');
+  document.getElementById('purchase-textarea').value = '';
+  document.getElementById('show-btn').classList.remove('active');
+  ['meta','lstep'].forEach(id=>{
+    document.getElementById('zone-'+id).classList.remove('done');
+    document.getElementById('icon-'+id).textContent='📂';
+    document.getElementById('label-'+id).classList.remove('done');
+    document.getElementById('hint-'+id).textContent = id==='meta'?'.xlsx ファイル — 広告マネージャからエクスポート':'.csv ファイル — 登録ID・日時・クエリパラメータ列が必要';
+    hideErr(id);
+  });
+}
+
+function setView(v) {
+  currentView = v;
+  sortKey = null;
+  sortDir = 1;
+  ['campaign','adset','ad'].forEach(k=>{
+    document.getElementById('tab-'+k).classList.toggle('active', k===v);
+  });
+  if (result) {
+    const purchaseText = document.getElementById('purchase-textarea').value;
+    const { counts:pCounts, total:pTotal } = parsePurchaseText(purchaseText);
+    renderTable(result, pCounts, pTotal);
+  }
+}
+
+let purchaseOpen = false;
+function togglePurchase() {
+  purchaseOpen = !purchaseOpen;
+  document.getElementById('purchase-body').classList.toggle('hidden', !purchaseOpen);
+  document.getElementById('purchase-chevron').textContent = purchaseOpen ? '▲' : '▼';
+  document.getElementById('purchase-panel').classList.toggle('open', purchaseOpen);
+}
+
+function clearPurchase() {
+  document.getElementById('purchase-textarea').value = '';
+  renderDashboard();
+}
+
+// ─── Demo ───
+function loadDemo() {
+  const DEMO_META = [
+    { camp:'g01-01', adset:'1', ad:'g01', spend:1895570, impressions:223758, clicks:4517, ctr:2.02, cpm:8471, cpc:420 },
+    { camp:'h01-01', adset:'1', ad:'h01', spend:1585638, impressions:341962, clicks:3244, ctr:0.95, cpm:4637, cpc:489 },
+    { camp:'h03-01', adset:'1', ad:'h03', spend:853484, impressions:138151, clicks:1757, ctr:1.27, cpm:6178, cpc:486 },
+    { camp:'e06-05', adset:'1', ad:'e06', spend:1314866, impressions:169770, clicks:2614, ctr:1.54, cpm:7745, cpc:503 },
+    { camp:'j03-01', adset:'1', ad:'j03', spend:291861, impressions:30862, clicks:1252, ctr:4.06, cpm:9457, cpc:233 },
+    { camp:'j09-01', adset:'1', ad:'j09', spend:196766, impressions:18509, clicks:640, ctr:3.46, cpm:10631, cpc:307 },
+  ];
+  metaRows = DEMO_META.map(r=>({ ...r, key:`${r.camp}_${r.adset}_${r.ad}`, camp_raw:r.camp }));
+
+  const DEMO_LSTEP_KEYS = ['g01-01_1_g01','g01-01_1_g01','g01-01_1_g01','h01-01_1_h01','h01-01_1_h01','h03-01_1_h03','e06-05_1_e06','e06-05_1_e06','j03-01_1_j03','j09-01_1_j09','j09-01_1_j09','j09-01_1_j09'];
+  lstepRows = DEMO_LSTEP_KEYS.map((k,i) => {
+    const [camp,set,creative] = k.split('_');
+    return { '日時':'2026-02-15 12:00:00', 'クエリパラメータ': JSON.stringify({param3:`account_x_campaign_${camp}_set_${set}_creative_${creative}`}) };
+  });
+  // 追加でたくさんのデモデータ
+  const keys = ['g01-01_1_g01','g01-01_1_g01','g01-01_1_g01','g01-01_1_g01','g01-01_1_g01','h01-01_1_h01','h01-01_1_h01','h01-01_1_h01','h03-01_1_h03','h03-01_1_h03','e06-05_1_e06','e06-05_1_e06','e06-05_1_e06','j03-01_1_j03','j09-01_1_j09','j09-01_1_j09'];
+  lstepRows = keys.map(k => {
+    const parts = k.split('_');
+    const camp = parts.slice(0,2).join('-'); // 簡易
+    return { '日時':'2026-02-15 12:00:00', 'クエリパラメータ': `{"param3":"account_x_campaign_${parts[0]}_${parts[1]}_set_${parts[2]}_creative_${parts[3]}"}` };
+  });
+
+  document.getElementById('date-start').value = '2026-02-01';
+  document.getElementById('date-end').value = '2026-03-01';
+  setZoneDone('meta', 'デモデータ');
+  setZoneDone('lstep', 'デモデータ');
+  showDashboard();
+}
+</script>
+</body>
+</html>
